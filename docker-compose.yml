@@ -1,0 +1,58 @@
+version: '3.4'
+
+services:
+  web.api:
+    image: ${DOCKER_REGISTRY-}webapi
+    build:
+      context: .
+      dockerfile: Web.Api/Dockerfile
+    container_name: ectraining_backend_api
+    restart: unless-stopped
+    ports:
+      - "5300:8080"
+      - "5301:8081"
+    depends_on:
+      - database
+    environment:
+     - DB_HOST=database
+     - DB_SA_PASSWORD="Password1"
+     - DB_NAME=ECTrainingDB
+    networks:
+      - app-network
+    
+  web.ui:
+    image: ${DOCKER_REGISTRY-}webui
+    build:
+      context: /Frontend/ectraining
+    container_name: ectraining_frontend_ui
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - '3001:3001'
+
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+        - ACCEPT_EULA="Y"
+        - MSSQL_SA_PASSWORD=Password1
+        - MSSQL_AGENT_ENABLED=1
+        - MSSQL_PID=Express
+    platform: linux/amd64
+    ports:
+        - 1433:1433
+    restart: unless-stopped
+    container_name: ECTrainingDatabase
+    networks:
+        - app-network
+    volumes:
+        - ./data:/var/opt/mssql/data
+        - ./log:/var/opt/mssql/log
+        - ./secrets:/var/opt/mssql/secrets
+
+
+networks:
+  app-network:
+    driver: bridge
